@@ -6,10 +6,12 @@ library(betapart)
 library(adespatial)
 library(betareg)
 library(cowplot)
+library(ggridges)
+library(viridisLite) 
 
 # Getting data ready --------------
 data = read_excel("raw_data.xlsx")
-com = data[,24:43]
+com = data[,12:31]
 data$category = as.factor(data$category)
 levels(data$category)
 
@@ -20,14 +22,12 @@ data$depth_m = data$`maximum_depth (cm)` / 100
 V = (2/3) * pi * data$`maximum_length (m)`* data$`maximum_width (m)`  * data$depth_m 
 data$Volume <- V
 
-com = data[,24:43]
-
 road = data %>% 
   filter(category == "Road ditches")
 pools = data %>% 
   filter(category == "Temporary pools")
-road_com = road[,24:43]
-pool_com = pools[,24:43]
+road_com = road[,12:31]
+pool_com = pools[,12:31]
 road_pa = decostand(road_com, method = "pa")
 pool_pa = decostand(pool_com, method = "pa")
 
@@ -35,9 +35,9 @@ pool_pa = decostand(pool_com, method = "pa")
 data$CAT <- interaction(data$Period, data$category)
 levels(data$CAT)
 levels(data$CAT) <- c(
-  "RD-DP",  # Drier Period.Road ditches
+  "RD-DP",  # Dry Period.Road ditches
   "RD-WP",  # Wet Period.Road ditches
-  "TP-DP",  # Drier Period.Temporary pools
+  "TP-DP",  # Dry Period.Temporary pools
   "TP-WP"   # Wet Period.Temporary pools
 )
 
@@ -84,7 +84,7 @@ ggsave("NMDS.tiff", NMDS_plot)
 TP_WP_df = data %>% 
   filter(CAT == "TP-WP")
 
-TP_WP_com = decostand(TP_WP_df[,24:43], method = "pa")
+TP_WP_com = decostand(TP_WP_df[,12:31], method = "pa")
 str(TP_WP_com)
 
 TP_WP_beta = beta.multi(TP_WP_com,  index.family = "sorensen")
@@ -93,7 +93,7 @@ TP_WP_beta #Beta total = 0.86, turnover = 0.75, nestedness = 0.11
 TP_DP_df = data %>% 
   filter(CAT == "TP-DP")
 
-TP_DP_com = decostand(TP_DP_df[,24:43], method = "pa")
+TP_DP_com = decostand(TP_DP_df[,12:31], method = "pa")
 str(TP_DP_com)
 
 TP_DP_beta = beta.multi(TP_DP_com,  index.family = "sorensen")
@@ -102,7 +102,7 @@ TP_DP_beta #Beta total = 0.89, turnover = 0.71, nestedness = 0.18
 RD_WP_df = data %>% 
   filter(CAT == "RD-WP")
 
-RD_WP_com = decostand(RD_WP_df[,24:43], method = "pa")
+RD_WP_com = decostand(RD_WP_df[,12:31], method = "pa")
 str(RD_WP_com)
 
 RD_WP_beta = beta.multi(RD_WP_com,  index.family = "sorensen")
@@ -111,7 +111,7 @@ RD_WP_beta #Beta total = 0.87, turnover = 0.71, nestedness = 0.16
 RD_DP_df = data %>% 
   filter(CAT == "RD-DP")
 
-RD_DP_com = decostand(RD_DP_df[,24:43], method = "pa")
+RD_DP_com = decostand(RD_DP_df[,12:31], method = "pa")
 str(RD_DP_com)
 
 RD_DP_beta = beta.multi(RD_DP_com,  index.family = "sorensen")
@@ -307,10 +307,50 @@ mantel_nestedness <- mantel(RD_DP_pair$beta.sne, DO_dist_RD_DP,
                             method = "pearson", permutations = 999)
 mantel_nestedness
 
+# Mantel pH ----------------
+class(TP_WP_df$pH)
+TP_WP_df$pH = as.numeric(TP_WP_df$pH)
+pH_dist_TP_WP = vegdist(TP_WP_df$pH, method = "euclidean")
+dados_dis_pH_tp_wp = data.frame(pH_dist_TP_WP, TP_WP_pair_df)
+mantel_turnover <- mantel(TP_WP_pair$beta.sim, pH_dist_TP_WP, 
+                          method = "pearson", permutations = 999)
+mantel_turnover
+mantel_nestedness <- mantel(TP_WP_pair$beta.sne,  pH_dist_TP_WP,
+                            method = "pearson", permutations = 999)
+mantel_nestedness
+TP_DP_df$pH= as.numeric(TP_DP_df$pH)
+pH_dist_TP_DP = vegdist(TP_DP_df$pH, method = "euclidean")
+dados_dis_pH_tp_dp = data.frame(pH_dist_TP_DP, TP_DP_pair_df)
+mantel_turnover <- mantel(TP_DP_pair$beta.sim, pH_dist_TP_DP, 
+                          method = "pearson", permutations = 999)
+mantel_turnover
+mantel_nestedness <- mantel(TP_DP_pair$beta.sne,  pH_dist_TP_DP,
+                            method = "pearson", permutations = 999)
+mantel_nestedness
+RD_WP_df$pH = as.numeric(RD_WP_df$pH)
+pH_dist_RD_WP = vegdist(RD_WP_df$pH, method = "euclidean")
+dados_dis_pH_rd_wp = data.frame(pH_dist_RD_WP, RD_WP_pair_df)
+mantel_turnover <- mantel(RD_WP_pair$beta.sim, pH_dist_RD_WP, 
+                          method = "pearson", permutations = 999)
+mantel_turnover
+mantel_nestedness <- mantel(RD_WP_pair$beta.sne,  DO_dist_RD_WP,
+                            method = "pearson", permutations = 999)
+mantel_nestedness
+RD_DP_df$pH = as.numeric(RD_DP_df$pH)
+pH_dist_RD_DP = vegdist(RD_DP_df$pH, method = "euclidean")
+dados_dis_pH_rd_dp = data.frame(pH_dist_RD_DP, RD_DP_pair_df)
+mantel_turnover <- mantel(RD_DP_pair$beta.sim, pH_dist_RD_DP, 
+                          method = "pearson", permutations = 999)
+mantel_turnover
+
+mantel_nestedness <- mantel(RD_DP_pair$beta.sne, pH_dist_RD_DP,
+                            method = "pearson", permutations = 999)
+mantel_nestedness
+
 # Mantel Distance to nearest stream ------------
 class(TP_WP_df$river_distance)
-TP_WP_df$river_distance = as.numeric(TP_WP_df$river_distance)
-stream_dist_TP_WP = vegdist(TP_WP_df$river_distance, method = "euclidean")
+TP_WP_df$stream_distance = as.numeric(TP_WP_df$stream_distance)
+stream_dist_TP_WP = vegdist(TP_WP_df$stream_distance, method = "euclidean")
 dados_dis_stream_tp_wp = data.frame(stream_dist_TP_WP, TP_WP_pair_df)
 mantel_turnover <- mantel(TP_WP_pair$beta.sim, stream_dist_TP_WP, 
                           method = "pearson", permutations = 999)
@@ -318,8 +358,8 @@ mantel_turnover
 mantel_nestedness <- mantel(TP_WP_pair$beta.sne,  stream_dist_TP_WP,
                             method = "pearson", permutations = 999)
 mantel_nestedness
-TP_DP_df$river_distance = as.numeric(TP_DP_df$river_distance)
-stream_dist_TP_DP = vegdist(TP_DP_df$river_distance, method = "euclidean")
+TP_DP_df$stream_distance = as.numeric(TP_DP_df$stream_distance)
+stream_dist_TP_DP = vegdist(TP_DP_df$stream_distance, method = "euclidean")
 dados_dis_stream_tp_dp = data.frame(stream_dist_TP_DP, TP_DP_pair_df)
 mantel_turnover <- mantel(TP_DP_pair$beta.sim, stream_dist_TP_DP, 
                           method = "pearson", permutations = 999)
@@ -327,8 +367,8 @@ mantel_turnover
 mantel_nestedness <- mantel(TP_DP_pair$beta.sne,stream_dist_TP_DP,
                             method = "pearson", permutations = 999)
 mantel_nestedness
-RD_WP_df$river_distance = as.numeric(RD_WP_df$river_distance)
-stream_dist_RD_WP = vegdist(RD_WP_df$river_distance, method = "euclidean")
+RD_WP_df$stream_distance = as.numeric(RD_WP_df$stream_distance)
+stream_dist_RD_WP = vegdist(RD_WP_df$stream_distance, method = "euclidean")
 dados_dis_stream_rd_wp = data.frame(stream_dist_RD_WP, RD_WP_pair_df)
 mantel_turnover <- mantel(RD_WP_pair$beta.sim, stream_dist_RD_WP, 
                           method = "pearson", permutations = 999)
@@ -336,8 +376,8 @@ mantel_turnover
 mantel_nestedness <- mantel(RD_WP_pair$beta.sne,  stream_dist_RD_WP,
                             method = "pearson", permutations = 999)
 mantel_nestedness
-RD_DP_df$river_distance = as.numeric(RD_DP_df$river_distance)
-stream_dist_RD_DP = vegdist(RD_DP_df$river_distance, method = "euclidean")
+RD_DP_df$stream_distance = as.numeric(RD_DP_df$stream_distance)
+stream_dist_RD_DP = vegdist(RD_DP_df$stream_distance, method = "euclidean")
 dados_dis_stream_rd_dp = data.frame(stream_dist_RD_DP, RD_DP_pair_df)
 mantel_turnover <- mantel(RD_DP_pair$beta.sim, stream_dist_RD_DP, 
                           method = "pearson", permutations = 999)
@@ -347,7 +387,7 @@ mantel_nestedness <- mantel(RD_DP_pair$beta.sne, stream_dist_RD_DP,
                             method = "pearson", permutations = 999)
 mantel_nestedness
 
-## Figure 4 ---------------------
+# Figure 4 ---------------------
 fig_a = dados_dis_stream_tp_wp %>% 
   ggplot(aes(x = stream_dist_TP_WP, y = Simpson))+
   geom_point(size = 6, shape = 21, fill = "#009E73", alpha = 0.8,
@@ -371,21 +411,201 @@ fig_b = dados_dis_stream_rd_dp %>%
   theme_bw(base_size = 18)+
   scale_y_continuous(limits = c(0,1), breaks = seq(0, 1, by = 0.25))
 
-
 fig_c = dados_dis_vol_tp_dp %>% 
   ggplot(aes(x = vol_dist_TP_DP, y = Aninhamento))+
   geom_point(size = 6, shape = 21, fill = "#E69F00", alpha = 0.8,
              stroke = 1.5) +
   geom_smooth(method = lm, se = FALSE, color = "black",
               linetype = "dashed", linewidth = 1.9)+
-  labs(y = "Nestedness (TP-DP)", x = expression("Distance in volume (m"^3*")"))+
+  labs(y = "Nestedness (TP-DP)", x = expression("Difference in volume (m"^3*")"))+
   theme_bw(base_size = 18)+
   scale_y_continuous(limits = c(0,1), breaks = seq(0, 1, by = 0.25))
 
-fig_complete = plot_grid(fig_c, fig_a, fig_b, nrow = 3, labels = "AUTO")
+fig_d = dados_dis_pH_rd_wp %>% 
+  ggplot(aes(x = pH_dist_RD_WP, y = Simpson))+
+  geom_point(size = 6, shape = 21, fill = "#0072B2", alpha = 0.8,
+             stroke = 1.5) +
+  geom_smooth(method = lm, se = FALSE, color = "black",
+              linetype = "dashed", linewidth = 1.9)+
+  labs(y = "Turnover (RD-WP)", 
+       x = "Difference in pH")+
+  theme_bw(base_size = 18)+
+  scale_y_continuous(limits = c(0,1), breaks = seq(0, 1, by = 0.25))
 
-ggsave("fig_complete.jpg", width = 6, height = 12)
+fig_complete = plot_grid(fig_a, fig_c, fig_d, fig_b, nrow = 2, 
+                         labels = "AUTO")
+
+ggsave("fig_complete.jpg", fig_complete, width = 12, height = 8)
 
 
+#   Figure 5 -----------------
 
+## TP_WP Species plot ----------------------------
+long_df_tp_wp <- TP_WP_df %>%
+  pivot_longer(cols = 12:31, names_to = "species", values_to = "abundance") %>%
+  mutate(
+    species         = fct_reorder(species, as.numeric(abundance), 
+                                  .fun = median, na.rm = TRUE),
+    abundance       = as.numeric(abundance),
+    stream_distance = as.numeric(stream_distance)
+  ) %>%
+  filter(!is.na(abundance), !is.na(stream_distance), abundance > 0)
+
+fig_5a = ggplot(long_df_tp_wp, aes(x = stream_distance, y = species,
+                                   size = abundance)) +
+  geom_point(alpha = 0.9, position = position_jitter(height = 0.1, width = 0),
+             shape = 21,fill = "#009E73", color = "black",
+             stroke = 1.2)+
+  labs(y = NULL, x = "Distance to the nearest stream (m)",
+       size = "Abundance")+
+  theme_bw(base_size = 18)+
+  theme(
+    axis.text.y = element_text(face = "italic")
+  )+
+  scale_x_continuous(limits = c(0,100))
+
+fig_5a
+
+## TP_DP Species plot ----------------------------
+long_df_tp_dp <- TP_DP_df %>%
+  pivot_longer(cols = 12:31, names_to = "species", values_to = "abundance") %>%
+  mutate(
+    species         = fct_reorder(species, as.numeric(abundance), 
+                                  .fun = median, na.rm = TRUE),
+    abundance       = as.numeric(abundance),
+    Volume = as.numeric(Volume)
+  ) %>%
+  filter(!is.na(abundance), !is.na(Volume), abundance > 0)
+
+fig_5b = ggplot(
+  long_df_tp_dp %>%
+    mutate(highlight = ifelse(species == "Nannostomus beckfordi", "highlight", "other")),
+  aes(x = Volume, y = species, size = abundance, fill = highlight)
+) +
+  geom_point(
+    alpha = 0.9,
+    position = position_jitter(height = 0.1, width = 0),
+    shape = 21, color = "black", stroke = 1.2
+  ) +
+  scale_fill_manual(
+    values = c("highlight" = "red", "other" = "#E69F00"),
+    guide = "none"
+  ) +
+  labs(x = "Volume (m³)", y = NULL, size = "Abundance") +
+  guides(
+    size = guide_legend(
+      override.aes = list(
+        fill = "#E69F00", 
+        shape = 21,
+        color = "black"
+      )
+    )
+  )+
+  theme_bw(base_size = 18)+
+  theme(
+    axis.text.y = element_text(face = "italic")
+  )+
+  scale_x_continuous(limits = c(0,15))
+
+fig_5b
+
+## RD_WP Species plot ----------------------------
+long_df_rd_wp <- RD_WP_df %>%
+  pivot_longer(cols = 12:31, names_to = "species", values_to = "abundance") %>%
+  mutate(
+    species         = fct_reorder(species, as.numeric(abundance), 
+                                  .fun = median, na.rm = TRUE),
+    abundance       = as.numeric(abundance),
+    pH = as.numeric(pH)
+  ) %>%
+  filter(!is.na(abundance), !is.na(pH), abundance > 0)
+
+fig_5c = ggplot(
+  long_df_rd_wp %>%
+    mutate(
+      highlight = ifelse(
+        species %in% c("Nannostomus beckfordi", "Poecilia reticulata"),
+        "highlight", "other"
+      )
+    ),
+  aes(x = pH, y = species, size = abundance, fill = highlight)
+)+
+  geom_point(
+    alpha = 0.9,
+    position = position_jitter(height = 0.1, width = 0),
+    shape = 21, color = "black", stroke = 1.2
+  ) +
+  scale_fill_manual(
+    values = c("highlight" = "red", "other" = "#0072B2"),
+    guide = "none"
+  ) +
+  labs(x = "pH", y = NULL, size = "Abundance") +
+  guides(
+    size = guide_legend(
+      override.aes = list(
+        fill = "#0072B2", 
+        shape = 21,
+        color = "black"
+      )
+    )
+  )+
+  theme_bw(base_size = 18)+
+  theme(
+    axis.text.y = element_text(face = "italic")
+  )+
+  scale_x_continuous(limits = c(2.5,7))
+
+fig_5c
+
+## RD_DP Species plot ----------------------------
+long_df_rd_dp <- RD_DP_df %>%
+  pivot_longer(cols = 12:31, names_to = "species", values_to = "abundance") %>%
+  mutate(
+    species         = fct_reorder(species, as.numeric(abundance), 
+                                  .fun = median, na.rm = TRUE),
+    abundance       = as.numeric(abundance),
+    stream_distance = as.numeric(stream_distance)
+  ) %>%
+  filter(!is.na(abundance), !is.na(stream_distance), abundance > 0)
+
+fig_5d = ggplot(
+  long_df_rd_dp %>%
+    mutate(
+      highlight = ifelse(
+        species %in% c("Nannostomus beckfordi", "Poecilia reticulata"),
+        "highlight", "other"
+      )
+    ),
+  aes(x = stream_distance, y = species, size = abundance, fill = highlight)
+)+
+  geom_point(
+    alpha = 0.9,
+    position = position_jitter(height = 0.1, width = 0),
+    shape = 21, color = "black", stroke = 1.2
+  ) +
+  scale_fill_manual(
+    values = c("highlight" = "red", "other" ="#D55E00"),
+    guide = "none"
+  ) +
+  labs(x = "Distance to the nearest stream (m)", y = NULL, size = "Abundance") +
+  guides(
+    size = guide_legend(
+      override.aes = list(
+        fill = "#D55E00", 
+        shape = 21,
+        color = "black"
+      )
+    )
+  )+
+  theme_bw(base_size = 18)+
+  theme(
+    axis.text.y = element_text(face = "italic")
+  )+
+  scale_x_continuous(limits = c(0,800))
+
+fig_5d
+
+figure5 = plot_grid(fig_5a, fig_5b, fig_5c, fig_5d, nrow = 2, labels = "AUTO")
+
+ggsave("fig_5.jpg", figure5, width = 15, height = 12)
 
