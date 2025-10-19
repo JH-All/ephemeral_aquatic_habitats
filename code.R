@@ -35,13 +35,14 @@ pool_pa = decostand(pool_com, method = "pa")
 data$CAT <- interaction(data$Period, data$category)
 levels(data$CAT)
 levels(data$CAT) <- c(
-  "RD-DP",  # Dry Period.Road ditches
-  "RD-WP",  # Wet Period.Road ditches
-  "TP-DP",  # Dry Period.Temporary pools
-  "TP-WP"   # Wet Period.Temporary pools
+  "Ditches - Dry",  # Dry Period.Road ditches
+  "Ditches - Wet",  # Wet Period.Road ditches
+  "Pools - Dry",  # Dry Period.Temporary pools
+  "Pools - Wet"   # Wet Period.Temporary pools
 )
 
-data$CAT <- factor(data$CAT, levels = c("TP-WP", "TP-DP", "RD-WP", "RD-DP"))
+data$CAT <- factor(data$CAT, levels = c("Pools - Wet", "Pools - Dry", 
+                                        "Ditches - Wet", "Ditches - Dry"))
 
 distancia <- vegdist(com, method = "bray")
 
@@ -65,9 +66,9 @@ hull_data <- nmds_scores %>%
 NMDS_plot = ggplot(nmds_scores, aes(x = NMDS1, y = NMDS2)) +
   geom_polygon(data = hull_data, aes(fill = CAT, group = CAT), 
                alpha = 0.3, color = "black", show.legend = F,
-               linewidth = 1.5) +
+               linewidth = 0.7) +
   geom_point(aes(fill = CAT), shape = 21, size = 5, color = "black",
-             show.legend = F, alpha = 1, stroke = 1.5) +
+             show.legend = F, alpha = 1, stroke = 0.6) +
   theme_bw(base_size = 20)+
   scale_fill_manual(values = c("#009E73", "#E69F00", "#0072B2", "#D55E00"))+
   facet_wrap(~CAT)+
@@ -82,7 +83,7 @@ ggsave("NMDS.tiff", NMDS_plot)
 # Beta diversity  -------------------------------
 
 TP_WP_df = data %>% 
-  filter(CAT == "TP-WP")
+  filter(CAT == "Pools - Wet")
 
 TP_WP_com = decostand(TP_WP_df[,12:31], method = "pa")
 str(TP_WP_com)
@@ -91,7 +92,7 @@ TP_WP_beta = beta.multi(TP_WP_com,  index.family = "sorensen")
 TP_WP_beta #Beta total = 0.86, turnover = 0.75, nestedness = 0.11
 
 TP_DP_df = data %>% 
-  filter(CAT == "TP-DP")
+  filter(CAT == "Pools - Dry")
 
 TP_DP_com = decostand(TP_DP_df[,12:31], method = "pa")
 str(TP_DP_com)
@@ -100,7 +101,7 @@ TP_DP_beta = beta.multi(TP_DP_com,  index.family = "sorensen")
 TP_DP_beta #Beta total = 0.89, turnover = 0.71, nestedness = 0.18
 
 RD_WP_df = data %>% 
-  filter(CAT == "RD-WP")
+  filter(CAT == "Ditches - Wet")
 
 RD_WP_com = decostand(RD_WP_df[,12:31], method = "pa")
 str(RD_WP_com)
@@ -109,7 +110,7 @@ RD_WP_beta = beta.multi(RD_WP_com,  index.family = "sorensen")
 RD_WP_beta #Beta total = 0.87, turnover = 0.71, nestedness = 0.16
 
 RD_DP_df = data %>% 
-  filter(CAT == "RD-DP")
+  filter(CAT == "Ditches - Dry")
 
 RD_DP_com = decostand(RD_DP_df[,12:31], method = "pa")
 str(RD_DP_com)
@@ -119,7 +120,7 @@ RD_DP_beta #Beta total = 0.89, turnover = 0.82, nestedness = 0.07
 
 
 beta_df <- data.frame(
-  CAT = c("TP-WP", "TP-DP", "RD-WP", "RD-DP"),
+  CAT = c("Pools - Wet", "Pools - Dry", "Ditches - Wet", "Ditches - Dry"),
   Beta_total = c(0.86, 0.89, 0.87, 0.89),
   Turnover = c(0.75, 0.71, 0.71, 0.82),
   Nestedness = c(0.11, 0.18, 0.16, 0.07)
@@ -133,11 +134,12 @@ beta_long <- beta_df %>%
 beta_long$CAT = as.factor(beta_long$CAT)
 levels(beta_long$CAT)
 beta_long$CAT<- factor(beta_long$CAT, 
-                       levels = c("TP-WP", "TP-DP", "RD-WP", "RD-DP"))
+                       levels = c("Pools - Wet", "Pools - Dry", 
+                                  "Ditches - Wet", "Ditches - Dry"))
 
 ## Figure 3 ----------------
 betadiv_barplot = ggplot(beta_long, aes(x = CAT, y = Value, fill = Component)) +
-  geom_bar(stat = "identity", color = "black", alpha = 0.9, size = 1.9) +
+  geom_bar(stat = "identity", color = "black", alpha = 0.9, size = 0.6) +
   theme_bw(base_size = 18) +
   scale_fill_manual(values = c(
     "Nestedness" = "#8C510A",     # marrom terroso escuro
@@ -145,7 +147,8 @@ betadiv_barplot = ggplot(beta_long, aes(x = CAT, y = Value, fill = Component)) +
   ))+
   labs(x = "Category", y = "Beta diversity", fill = "Component") +
   scale_y_continuous(limits = c(0,1), expand = c(0,0))+
-  labs(x = NULL)
+  labs(x = NULL)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ggsave("betadiv_barplot.tiff", betadiv_barplot)
 
@@ -391,11 +394,11 @@ mantel_nestedness
 fig_a = dados_dis_stream_tp_wp %>% 
   ggplot(aes(x = stream_dist_TP_WP, y = Simpson))+
   geom_point(size = 6, shape = 21, fill = "#009E73", alpha = 0.8,
-             stroke = 1.5) +
+             stroke = 0.6) +
   geom_smooth(method = lm, se = FALSE, color = "black",
-              linetype = "dashed", linewidth = 1.9)+
-  labs(y = "Turnover (TP-WP)", 
-       x = "Difference in distance to nearest stream (m)")+
+              linetype = "dashed", linewidth = 1.2)+
+  labs(y = "Turnover (Pools - Wet)", 
+       x = "Differences in distance to nearest stream (m)")+
   theme_bw(base_size = 18)+
   scale_y_continuous(limits = c(0,1), breaks = seq(0, 1, by = 0.25))
 
@@ -403,32 +406,32 @@ fig_a = dados_dis_stream_tp_wp %>%
 fig_b = dados_dis_stream_rd_dp %>% 
   ggplot(aes(x = stream_dist_RD_DP, y = Simpson))+
   geom_point(size = 6, shape = 21, fill = "#D55E00", alpha = 0.8,
-             stroke = 1.5) +
+             stroke = 0.6) +
   geom_smooth(method = lm, se = FALSE, color = "black",
-              linetype = "dashed", linewidth = 1.9)+
-  labs(y = "Turnover (RD-DP)", 
-       x = "Difference in distance to nearest stream (m)")+
+              linetype = "dashed", linewidth = 1.2)+
+  labs(y = "Turnover (Ditches - Dry)", 
+       x = "Differences in distance to nearest stream (m)")+
   theme_bw(base_size = 18)+
   scale_y_continuous(limits = c(0,1), breaks = seq(0, 1, by = 0.25))
 
 fig_c = dados_dis_vol_tp_dp %>% 
   ggplot(aes(x = vol_dist_TP_DP, y = Aninhamento))+
   geom_point(size = 6, shape = 21, fill = "#E69F00", alpha = 0.8,
-             stroke = 1.5) +
+             stroke = 0.6) +
   geom_smooth(method = lm, se = FALSE, color = "black",
-              linetype = "dashed", linewidth = 1.9)+
-  labs(y = "Nestedness (TP-DP)", x = expression("Difference in volume (m"^3*")"))+
+              linetype = "dashed", linewidth = 1.2)+
+  labs(y = "Nestedness (Pools - Dry)", x = expression("Differences in volume (m"^3*")"))+
   theme_bw(base_size = 18)+
   scale_y_continuous(limits = c(0,1), breaks = seq(0, 1, by = 0.25))
 
 fig_d = dados_dis_pH_rd_wp %>% 
   ggplot(aes(x = pH_dist_RD_WP, y = Simpson))+
   geom_point(size = 6, shape = 21, fill = "#0072B2", alpha = 0.8,
-             stroke = 1.5) +
+             stroke = 0.6) +
   geom_smooth(method = lm, se = FALSE, color = "black",
-              linetype = "dashed", linewidth = 1.9)+
-  labs(y = "Turnover (RD-WP)", 
-       x = "Difference in pH")+
+              linetype = "dashed", linewidth = 1.2)+
+  labs(y = "Turnover (Ditches - Wet)", 
+       x = "Differences in pH")+
   theme_bw(base_size = 18)+
   scale_y_continuous(limits = c(0,1), breaks = seq(0, 1, by = 0.25))
 
@@ -455,7 +458,7 @@ fig_5a = ggplot(long_df_tp_wp, aes(x = stream_distance, y = species,
                                    size = abundance)) +
   geom_point(alpha = 0.9, position = position_jitter(height = 0.1, width = 0),
              shape = 21,fill = "#009E73", color = "black",
-             stroke = 1.2)+
+             stroke = 0.6)+
   labs(y = NULL, x = "Distance to the nearest stream (m)",
        size = "Abundance")+
   theme_bw(base_size = 18)+
@@ -485,7 +488,7 @@ fig_5b = ggplot(
   geom_point(
     alpha = 0.9,
     position = position_jitter(height = 0.1, width = 0),
-    shape = 21, color = "black", stroke = 1.2
+    shape = 21, color = "black", stroke = 0.6
   ) +
   scale_fill_manual(
     values = c("highlight" = "red", "other" = "#E69F00"),
@@ -524,7 +527,8 @@ fig_5c = ggplot(
   long_df_rd_wp %>%
     mutate(
       highlight = ifelse(
-        species %in% c("Nannostomus beckfordi", "Poecilia reticulata"),
+        species %in% c("Nannostomus beckfordi", "Poecilia reticulata",
+                       "Hoplosternum littorale"),
         "highlight", "other"
       )
     ),
@@ -533,7 +537,7 @@ fig_5c = ggplot(
   geom_point(
     alpha = 0.9,
     position = position_jitter(height = 0.1, width = 0),
-    shape = 21, color = "black", stroke = 1.2
+    shape = 21, color = "black", stroke = 0.6
   ) +
   scale_fill_manual(
     values = c("highlight" = "red", "other" = "#0072B2"),
@@ -581,7 +585,7 @@ fig_5d = ggplot(
   geom_point(
     alpha = 0.9,
     position = position_jitter(height = 0.1, width = 0),
-    shape = 21, color = "black", stroke = 1.2
+    shape = 21, color = "black", stroke = 0.6
   ) +
   scale_fill_manual(
     values = c("highlight" = "red", "other" ="#D55E00"),
@@ -609,3 +613,46 @@ figure5 = plot_grid(fig_5a, fig_5b, fig_5c, fig_5d, nrow = 2, labels = "AUTO")
 
 ggsave("fig_5.jpg", figure5, width = 15, height = 12)
 
+# Figure S1 ----------------------------------------
+data$month = as.factor(data$month)
+levels(data$month)
+data$Volume
+data$category
+data <- data %>%
+  mutate(
+    month = factor(month, levels = month.name),           
+    category = factor(category, levels = c("Temporary pools", "Road ditches"))
+  )
+
+
+sum_month <- data %>%
+  group_by(category, month) %>%
+  summarise(
+    n        = dplyr::n(),
+    vol_mean = mean(Volume, na.rm = TRUE),
+    vol_sd   = sd(Volume, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  complete(
+    category,
+    month = factor(month.name, levels = month.name),
+    fill = list(n = 0, vol_mean = NA_real_, vol_sd = NA_real_)
+  )
+
+
+fig_s1 = ggplot(sum_month, aes(x = month, y = vol_mean)) +
+  geom_errorbar(aes(ymin = vol_mean - vol_sd, ymax = vol_mean + vol_sd),
+                width = 0.2, size = 0.8, na.rm = TRUE) +
+  geom_point(size = 2, na.rm = TRUE) +
+  geom_line(aes(group = 1), linewidth = 0.5, na.rm = TRUE) +
+  facet_wrap(~ category, ncol = 1, scales = "free_y") +
+  labs(
+    x = NULL,
+    y = expression("Mean ± SD of Volume (m"^3*")")
+  ) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+fig_s1
+
+ggsave("fig_s1.jpg", fig_s1)
