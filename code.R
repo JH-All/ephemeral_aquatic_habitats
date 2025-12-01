@@ -491,7 +491,7 @@ fig_5b = ggplot(
     shape = 21, color = "black", stroke = 0.6
   ) +
   scale_fill_manual(
-    values = c("highlight" = "red", "other" = "#E69F00"),
+    values = c("highlight" = "darkgray", "other" = "#E69F00"),
     guide = "none"
   ) +
   labs(x = "Volume (m³)", y = NULL, size = "Abundance") +
@@ -540,7 +540,7 @@ fig_5c = ggplot(
     shape = 21, color = "black", stroke = 0.6
   ) +
   scale_fill_manual(
-    values = c("highlight" = "red", "other" = "#0072B2"),
+    values = c("highlight" = "darkgray", "other" = "#0072B2"),
     guide = "none"
   ) +
   labs(x = "pH", y = NULL, size = "Abundance") +
@@ -588,7 +588,7 @@ fig_5d = ggplot(
     shape = 21, color = "black", stroke = 0.6
   ) +
   scale_fill_manual(
-    values = c("highlight" = "red", "other" ="#D55E00"),
+    values = c("highlight" = "darkgray", "other" ="#D55E00"),
     guide = "none"
   ) +
   labs(x = "Distance to the nearest stream (m)", y = NULL, size = "Abundance") +
