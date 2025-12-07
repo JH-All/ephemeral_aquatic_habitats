@@ -605,7 +605,7 @@ fig_5d = ggplot(
   theme(
     axis.text.y = element_text(face = "italic")
   )+
-  scale_x_continuous(limits = c(0,800))
+  scale_x_continuous(limits = c(0,600))
 
 fig_5d
 
